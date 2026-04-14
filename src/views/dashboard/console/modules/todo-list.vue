@@ -3,7 +3,9 @@
     <div class="art-card-header">
       <div class="title">
         <h4>代办事项</h4>
-        <p>待处理<span class="text-danger">3</span></p>
+        <p
+          >待处理<span class="text-danger">{{ pendingCount }}</span></p
+        >
       </div>
     </div>
 
@@ -11,7 +13,7 @@
       <ElScrollbar>
         <div
           class="flex-cb h-17.5 border-b border-g-300 text-sm last:border-b-0"
-          v-for="(item, index) in list"
+          v-for="(item, index) in todoList"
           :key="index"
         >
           <div>
@@ -26,46 +28,17 @@
 </template>
 
 <script setup lang="ts">
-  interface TodoItem {
-    username: string
-    date: string
-    complate: boolean
+  interface Props {
+    data?: Api.Dashboard.TodoData
   }
 
-  /**
-   * 待办事项列表
-   * 记录每日工作任务及完成状态
-   */
-  const list = reactive<TodoItem[]>([
-    {
-      username: '查看今天工作内容',
-      date: '上午 09:30',
-      complate: true
-    },
-    {
-      username: '回复邮件',
-      date: '上午 10:30',
-      complate: true
-    },
-    {
-      username: '工作汇报整理',
-      date: '上午 11:00',
-      complate: true
-    },
-    {
-      username: '产品需求会议',
-      date: '下午 02:00',
-      complate: false
-    },
-    {
-      username: '整理会议内容',
-      date: '下午 03:30',
-      complate: false
-    },
-    {
-      username: '明天工作计划',
-      date: '下午 06:30',
-      complate: false
-    }
-  ])
+  const props = withDefaults(defineProps<Props>(), {
+    data: () => ({
+      list: [],
+      pendingCount: 0
+    })
+  })
+
+  const todoList = computed(() => props.data.list)
+  const pendingCount = computed(() => props.data.pendingCount)
 </script>
