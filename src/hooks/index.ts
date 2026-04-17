@@ -30,3 +30,6 @@ export { useChart, useChartComponent, useChartOps } from './core/useChart'
 
 // 布局高度
 export { useLayoutHeight, useAutoLayoutHeight } from './core/useLayoutHeight'
+
+// 自动刷新
+export { useAutoRefresh } from './core/useAutoRefresh'

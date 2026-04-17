@@ -135,4 +135,67 @@ declare namespace Api {
         }
     >
   }
+
+  /** Dashboard 数据类型 */
+  namespace Dashboard {
+    /** 卡片数据项 */
+    interface CardDataItem {
+      /** 描述 */
+      des: string
+      /** 数值 */
+      num: number
+      /** 变化率 */
+      change: string
+      /** 图标 */
+      icon: string
+    }
+
+    /** 图表数据项 */
+    interface ChartDataItem {
+      /** 名称 */
+      name: string
+      /** 数据值 */
+      data: number[]
+    }
+
+    /** 动态列表项 */
+    interface DynamicItem {
+      /** 用户名 */
+      username: string
+      /** 类型 */
+      type: string
+      /** 目标 */
+      target: string
+    }
+
+    /** 待办事项 */
+    interface TodoItem {
+      /** 内容 */
+      username: string
+      /** 日期 */
+      date: string
+      /** 是否完成 */
+      complate: boolean
+    }
+
+    /** Dashboard 完整数据 */
+    interface DashboardData {
+      /** 卡片数据 */
+      cardData: CardDataItem[]
+      /** 活跃用户数据 */
+      activeUserData?: {
+        xAxisData: string[]
+        seriesData: number[]
+      }
+      /** 销售概览数据 */
+      salesOverviewData?: {
+        xAxisData: string[]
+        seriesData: number[]
+      }
+      /** 动态列表 */
+      dynamicList?: DynamicItem[]
+      /** 待办列表 */
+      todoList?: TodoItem[]
+    }
+  }
 }
