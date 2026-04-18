@@ -15,187 +15,126 @@
  * @author Art Design Pro Team
  */
 
-import { computed } from 'vue'
+import { computed, ComputedRef, Ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useSettingStore } from '@/store/modules/setting'
 import { headerBarConfig } from '@/config/modules/headerBar'
-import { HeaderBarFeatureConfig } from '@/types'
+import { HeaderBarFeatureConfig, FeatureConfigItem } from '@/types'
 
-/**
- * 顶部栏功能管理
- * @returns 顶部栏功能相关的状态和方法
- */
+const FAST_ENTER_DEFAULT_MIN_WIDTH = 1200
+
+interface FastEnterFeatureConfig extends FeatureConfigItem {
+  minWidth?: number
+}
+
+type FeatureKey = keyof HeaderBarFeatureConfig
+
+interface ShowFeatureDefinition {
+  name: string
+  feature: FeatureKey
+  storeRefKey?: string
+}
+
+const showFeatureDefinitions: ShowFeatureDefinition[] = [
+  { name: 'shouldShowMenuButton', feature: 'menuButton', storeRefKey: 'showMenuButton' },
+  { name: 'shouldShowRefreshButton', feature: 'refreshButton', storeRefKey: 'showRefreshButton' },
+  { name: 'shouldShowFastEnter', feature: 'fastEnter', storeRefKey: 'showFastEnter' },
+  { name: 'shouldShowBreadcrumb', feature: 'breadcrumb', storeRefKey: 'showCrumbs' },
+  { name: 'shouldShowGlobalSearch', feature: 'globalSearch' },
+  { name: 'shouldShowFullscreen', feature: 'fullscreen' },
+  { name: 'shouldShowNotification', feature: 'notification' },
+  { name: 'shouldShowChat', feature: 'chat' },
+  { name: 'shouldShowLanguage', feature: 'language', storeRefKey: 'showLanguage' },
+  { name: 'shouldShowSettings', feature: 'settings' },
+  { name: 'shouldShowThemeToggle', feature: 'themeToggle' }
+]
+
 export function useHeaderBar() {
   const settingStore = useSettingStore()
 
-  // 获取顶部栏配置
-  const headerBarConfigRef = computed<HeaderBarFeatureConfig>(() => headerBarConfig)
+  const {
+    showMenuButton,
+    showFastEnter,
+    showRefreshButton,
+    showCrumbs,
+    showLanguage
+  } = storeToRefs(settingStore)
 
-  // 从store中获取相关状态
-  const { showMenuButton, showFastEnter, showRefreshButton, showCrumbs, showLanguage } =
-    storeToRefs(settingStore)
-
-  /**
-   * 检查特定功能是否启用
-   * @param feature 功能名称
-   * @returns 是否启用
-   */
-  const isFeatureEnabled = (feature: keyof HeaderBarFeatureConfig): boolean => {
-    return headerBarConfigRef.value[feature]?.enabled ?? false
+  const storeRefs: Record<string, Ref<boolean>> = {
+    showMenuButton,
+    showFastEnter,
+    showRefreshButton,
+    showCrumbs,
+    showLanguage
   }
 
-  /**
-   * 获取功能配置信息
-   * @param feature 功能名称
-   * @returns 功能配置信息
-   */
-  const getFeatureConfig = (feature: keyof HeaderBarFeatureConfig) => {
-    return headerBarConfigRef.value[feature]
+  const isFeatureEnabled = (feature: FeatureKey): boolean => {
+    return headerBarConfig[feature]?.enabled ?? false
   }
 
-  // 检查菜单按钮是否显示
-  const shouldShowMenuButton = computed(() => {
-    return isFeatureEnabled('menuButton') && showMenuButton.value
-  })
+  const getFeatureConfig = (feature: FeatureKey) => {
+    return headerBarConfig[feature]
+  }
 
-  // 检查刷新按钮是否显示
-  const shouldShowRefreshButton = computed(() => {
-    return isFeatureEnabled('refreshButton') && showRefreshButton.value
-  })
+  const createShouldShowComputed = (
+    feature: FeatureKey,
+    storeRef?: Ref<boolean>
+  ): ComputedRef<boolean> => {
+    return computed(() => {
+      const enabled = isFeatureEnabled(feature)
+      if (storeRef) {
+        return enabled && storeRef.value
+      }
+      return enabled
+    })
+  }
 
-  // 检查快速入口是否显示
-  const shouldShowFastEnter = computed(() => {
-    return isFeatureEnabled('fastEnter') && showFastEnter.value
-  })
+  const shouldShowFeatures = showFeatureDefinitions.reduce(
+    (acc, def) => {
+      const storeRef = def.storeRefKey ? storeRefs[def.storeRefKey] : undefined
+      acc[def.name] = createShouldShowComputed(def.feature, storeRef)
+      return acc
+    },
+    {} as Record<string, ComputedRef<boolean>>
+  )
 
-  // 检查面包屑是否显示
-  const shouldShowBreadcrumb = computed(() => {
-    return isFeatureEnabled('breadcrumb') && showCrumbs.value
-  })
-
-  // 检查全局搜索是否显示
-  const shouldShowGlobalSearch = computed(() => {
-    return isFeatureEnabled('globalSearch')
-  })
-
-  // 检查全屏按钮是否显示
-  const shouldShowFullscreen = computed(() => {
-    return isFeatureEnabled('fullscreen')
-  })
-
-  // 检查通知中心是否显示
-  const shouldShowNotification = computed(() => {
-    return isFeatureEnabled('notification')
-  })
-
-  // 检查聊天功能是否显示
-  const shouldShowChat = computed(() => {
-    return isFeatureEnabled('chat')
-  })
-
-  // 检查语言切换是否显示
-  const shouldShowLanguage = computed(() => {
-    return isFeatureEnabled('language') && showLanguage.value
-  })
-
-  // 检查设置面板是否显示
-  const shouldShowSettings = computed(() => {
-    return isFeatureEnabled('settings')
-  })
-
-  // 检查主题切换是否显示
-  const shouldShowThemeToggle = computed(() => {
-    return isFeatureEnabled('themeToggle')
-  })
-
-  // 获取快速入口的最小宽度
   const fastEnterMinWidth = computed(() => {
-    const config = getFeatureConfig('fastEnter')
-    return (config as any)?.minWidth || 1200
+    const config = getFeatureConfig('fastEnter') as FastEnterFeatureConfig
+    return config?.minWidth ?? FAST_ENTER_DEFAULT_MIN_WIDTH
   })
 
-  /**
-   * 检查功能是否启用（别名）
-   * @param feature 功能名称
-   * @returns 是否启用
-   */
-  const isFeatureActive = (feature: keyof HeaderBarFeatureConfig): boolean => {
-    return isFeatureEnabled(feature)
+  const getEnabledFeatures = (): FeatureKey[] => {
+    return Object.keys(headerBarConfig).filter(
+      (key) => headerBarConfig[key as FeatureKey]?.enabled
+    ) as FeatureKey[]
   }
 
-  /**
-   * 获取功能配置（别名）
-   * @param feature 功能名称
-   * @returns 功能配置
-   */
-  const getFeatureInfo = (feature: keyof HeaderBarFeatureConfig) => {
-    return getFeatureConfig(feature)
-  }
-
-  /**
-   * 获取所有启用的功能列表
-   * @returns 启用的功能名称数组
-   */
-  const getEnabledFeatures = (): (keyof HeaderBarFeatureConfig)[] => {
-    return Object.keys(headerBarConfigRef.value).filter(
-      (key) => headerBarConfigRef.value[key as keyof HeaderBarFeatureConfig]?.enabled
-    ) as (keyof HeaderBarFeatureConfig)[]
-  }
-
-  /**
-   * 获取所有禁用的功能列表
-   * @returns 禁用的功能名称数组
-   */
-  const getDisabledFeatures = (): (keyof HeaderBarFeatureConfig)[] => {
-    return Object.keys(headerBarConfigRef.value).filter(
-      (key) => !headerBarConfigRef.value[key as keyof HeaderBarFeatureConfig]?.enabled
-    ) as (keyof HeaderBarFeatureConfig)[]
-  }
-
-  /**
-   * 获取所有启用的功能（别名）
-   * @returns 启用的功能列表
-   */
-  const getActiveFeatures = () => {
-    return getEnabledFeatures()
-  }
-
-  /**
-   * 获取所有禁用的功能（别名）
-   * @returns 禁用的功能列表
-   */
-  const getInactiveFeatures = () => {
-    return getDisabledFeatures()
+  const getDisabledFeatures = (): FeatureKey[] => {
+    return Object.keys(headerBarConfig).filter(
+      (key) => !headerBarConfig[key as FeatureKey]?.enabled
+    ) as FeatureKey[]
   }
 
   return {
-    // 配置
-    headerBarConfig: headerBarConfigRef,
+    headerBarConfig,
 
-    // 显示状态计算属性
-    shouldShowMenuButton, // 是否显示菜单按钮
-    shouldShowRefreshButton, // 是否显示刷新按钮
-    shouldShowFastEnter, // 是否显示快速入口
-    shouldShowBreadcrumb, // 是否显示面包屑
-    shouldShowGlobalSearch, // 是否显示全局搜索
-    shouldShowFullscreen, // 是否显示全屏按钮
-    shouldShowNotification, // 是否显示通知中心
-    shouldShowChat, // 是否显示聊天功能
-    shouldShowLanguage, // 是否显示语言切换
-    shouldShowSettings, // 是否显示设置面板
-    shouldShowThemeToggle, // 是否显示主题切换
+    shouldShowMenuButton: shouldShowFeatures.shouldShowMenuButton,
+    shouldShowRefreshButton: shouldShowFeatures.shouldShowRefreshButton,
+    shouldShowFastEnter: shouldShowFeatures.shouldShowFastEnter,
+    shouldShowBreadcrumb: shouldShowFeatures.shouldShowBreadcrumb,
+    shouldShowGlobalSearch: shouldShowFeatures.shouldShowGlobalSearch,
+    shouldShowFullscreen: shouldShowFeatures.shouldShowFullscreen,
+    shouldShowNotification: shouldShowFeatures.shouldShowNotification,
+    shouldShowChat: shouldShowFeatures.shouldShowChat,
+    shouldShowLanguage: shouldShowFeatures.shouldShowLanguage,
+    shouldShowSettings: shouldShowFeatures.shouldShowSettings,
+    shouldShowThemeToggle: shouldShowFeatures.shouldShowThemeToggle,
 
-    // 配置相关
-    fastEnterMinWidth, // 快速入口最小宽度
+    fastEnterMinWidth,
 
-    // 方法
-    isFeatureEnabled, // 检查功能是否启用
-    isFeatureActive, // 检查功能是否启用（别名）
-    getFeatureConfig, // 获取功能配置
-    getFeatureInfo, // 获取功能配置（别名）
-    getEnabledFeatures, // 获取所有启用的功能
-    getDisabledFeatures, // 获取所有禁用的功能
-    getActiveFeatures, // 获取所有启用的功能（别名）
-    getInactiveFeatures // 获取所有禁用的功能（别名）
+    isFeatureEnabled,
+    getFeatureConfig,
+    getEnabledFeatures,
+    getDisabledFeatures
   }
 }
